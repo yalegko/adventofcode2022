@@ -41,7 +41,7 @@ end
 
 [fname] = System.argv()
 sum = File.stream!(fname)
-	|> Stream.map(&String.trim/1)
+  |> Stream.map(&String.trim/1)
   |> Stream.map(&String.split(&1, " "))
   |> Stream.map(fn [they, result] ->
     [
