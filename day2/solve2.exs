@@ -40,7 +40,7 @@ end
 
 
 [fname] = System.argv()
-sum = File.stream!(fname)
+File.stream!(fname)
   |> Stream.map(&String.trim/1)
   |> Stream.map(&String.split(&1, " "))
   |> Stream.map(fn [they, result] ->
@@ -52,5 +52,10 @@ sum = File.stream!(fname)
   |> Stream.map(fn [they, result] ->
     Game.game_score(result) + Game.figure_score(Game.find_move(they, result))
   end)
-  |> Enum.reduce(&(&1+&2))
-IO.puts(sum)
+  |> Stream.transform(0, fn el, acc ->
+    sum =  el + acc
+    {[sum], sum}
+  end)
+  |> Stream.take(-1)
+  |> Stream.each(&IO.puts/1)
+  |> Stream.run()
