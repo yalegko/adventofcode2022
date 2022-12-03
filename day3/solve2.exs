@@ -21,8 +21,8 @@ File.stream!(fname)
       |> Enum.map(&String.graphemes/1)
       |> Enum.map(get_unique_chars_map)
       |> Enum.reduce(%{}, sum_maps)
-      |> Enum.max(fn {_k1, v1}, {_k2, v2} -> v1 >= v2 end)
-      |> elem(0) # Result of max is tuple {k,v}.
+      |> Enum.find(fn {_k, v} -> v == 3 end)
+      |> elem(0) # Result is tuple {k,v}.
       |> String.to_charlist()
       |> Enum.fetch!(0)
   end)
