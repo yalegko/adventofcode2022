@@ -25,10 +25,7 @@ File.stream!(fname)
   end)
 
   # Sum everything.
-  |> Stream.transform(0, fn el, acc ->
-    sum =  el + acc
-    {[sum], sum}
-  end)
+  |> Stream.scan(&(&1 + &2))
   |> Stream.take(-1)
   |> Stream.each(&IO.puts/1)
   |> Stream.run()
