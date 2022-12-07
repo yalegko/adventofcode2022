@@ -1,4 +1,4 @@
-#!/bin/env elixir
+#!/usr/bin/env elixir
 
 [fname] = System.argv()
 file = File.stream!(fname)

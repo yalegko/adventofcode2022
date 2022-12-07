@@ -1,4 +1,4 @@
-#!/bin/env elixir
+#!/usr/bin/env elixir
 
 chunk_size = 14
 

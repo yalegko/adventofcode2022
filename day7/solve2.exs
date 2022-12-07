@@ -27,11 +27,11 @@ defmodule FS do
 
   # Observes a file of the given size, adding it to the FS tree.
   def ls(fs, file_name, size) do
-    file_path = Enum.reverse(fs.path_stack) ++ [file_name]
+    file_path = Enum.reverse([file_name | fs.path_stack])
     %FS{fs | file_tree: Tree.add(fs.file_tree, file_path, size)}
   end
 
-  # Returns of map %{ dir_path: cumulative_dir_size }.
+  # Returns map %{ dir_path: cumulative_dir_size }.
   def dir_sizes(fs) do
     {_, sizes_map} = calc_size(fs.file_tree, %{}, [])
     sizes_map
