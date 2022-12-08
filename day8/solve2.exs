@@ -1,71 +1,32 @@
 #!/usr/bin/env elixir
 
 defmodule Matrix do
-  def elem_at(matrix, i, j) do
-    matrix
-    |> Enum.at(i)
-    |> Enum.at(j)
-  end
-
   def scenic_score(matrix, i, j) do
     size = Enum.count(matrix) - 1
+    target_tree = matrix |> Enum.at(i) |> Enum.at(j)
 
-    up = cond do
-      i == 0 -> 0
-      i == 1 -> 1
-      true -> visible_col(matrix, i, j, (i-1)..0)
-    end
-    down = cond do
-      i == size -> 0
-      i == size - 1 -> 1
-      true -> visible_col(matrix, i, j, (i+1)..size)
-    end
-    left = cond do
-      j == 0 -> 0
-      j == 1 -> 1
-      true -> visible_row(matrix, i, j, (j-1)..0)
-    end
-    right = cond do
-      j == size -> 0
-      j == size - 1 -> 1
-      true -> visible_row(matrix, i, j, (j+1)..size)
-    end
+    up = matrix |> column(j) |> Enum.take(i) |> Enum.reverse() |> count_visible(target_tree)
+    down = matrix |> column(j) |> Enum.take(-(size - i)) |> count_visible(target_tree)
+    left = matrix |> row(i) |> Enum.take(j) |> Enum.reverse() |> count_visible(target_tree)
+    right = matrix |> row(i) |> Enum.take(-(size - j)) |> count_visible(target_tree)
 
     up * down * left * right
   end
 
-  defp visible_col(matrix, i, j, column_seq) do
-    target_tree = elem_at(matrix, i, j)
+  defp row(matrix, j), do: matrix |> Enum.at(j)
+  defp column(matrix, i), do: matrix |> Enum.map(&Enum.at(&1, i))
 
-    column_seq
-    |> Enum.reduce(
-      {0, :go},
-      fn i, {sum, mark} ->
-        eij = elem_at(matrix, i, j)
-        cond do
-          mark == :go and eij < target_tree -> {sum+1, :go}
-          mark == :go -> {sum + 1, :stop}
-          mark == :stop -> {sum, :stop}
-        end
-      end)
-    |> elem(0)
-  end
+  defp count_visible(seq, target) do
+    num_visible =
+      seq
+      |> Enum.take_while(&(&1 < target))
+      |> Enum.count()
 
-  defp visible_row(matrix, i, j, row_seq) do
-    target_tree = elem_at(matrix, i, j)
-
-    row_seq
-    |> Enum.reduce(
-      {0, :go},
-      fn j, {sum, mark} ->
-        eij = elem_at(matrix, i, j)
-        cond do
-          mark == :go and eij < target_tree -> {sum+1, :go}
-          mark == :go -> {sum + 1, :stop}
-          mark == :stop -> {sum, :stop}
-        end
-      end)
-    |> elem(0)
+    # If we stopped at the end of the forest -- take the counted value as is,
+    # otherwise count the tree we were stumbled upon.
+    #
+    # TODO: Am I missing a way to do it in a single line?
+    if num_visible == Enum.count(seq), do: num_visible, else: num_visible + 1
   end
 end
 
@@ -78,15 +39,7 @@ matrix =
 
 size = Enum.count(matrix) - 1
 
-0..size
-  |> Enum.flat_map(fn i ->
-    Enum.map(0..size, fn j -> {i, j} end)
-  end)
-  |> Enum.reduce(0, fn {i, j}, max ->
-    score = Matrix.scenic_score(matrix, i, j)
-    cond do
-      score > max -> score
-      true -> max
-    end
-  end)
+for(i <- 0..size, j <- 0..size, do: {i, j})
+|> Enum.map(fn {i, j} -> Matrix.scenic_score(matrix, i, j) end)
+|> Enum.max()
 |> IO.inspect()
