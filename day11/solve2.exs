@@ -1,41 +1,33 @@
 #!/usr/bin/env elixir
 
 defmodule Monkey do
-  defstruct items: [], operation: nil, divisor: 0, targets: {}
+  defstruct items: [], operation: nil, divisor: 0, to_true: nil, to_false: nil
 
   def new(lines) do
-    items =
-      lines
-      |> Enum.at(1)
-      |> String.replace_prefix("Starting items: ", "")
-      |> String.replace(",", " ")
-      |> String.split()
-      |> Enum.map(&String.to_integer/1)
+    lines
+    |> Enum.map(&String.split/1)
+    |> Enum.reduce(struct!(Monkey), fn
+      ["Monkey", _num], monkey ->
+        monkey
 
-    opeartion =
-      lines
-      |> Enum.at(2)
-      |> String.replace_prefix("Operation: new = ", "")
+      ["Starting", "items:" | items], monkey ->
+        items
+        |> Enum.map(fn s -> String.replace(s, ",", "") end)
+        |> Enum.map(&String.to_integer/1)
+        |> (fn items -> Map.put(monkey, :items, items) end).()
 
-    divisor =
-      lines
-      |> Enum.at(3)
-      |> String.replace_prefix("Test: divisible by ", "")
-      |> String.to_integer()
+      ["Operation:", "new", "=" | operands], monkey ->
+        Map.put(monkey, :operation, Enum.join(operands, " "))
 
-    to_true =
-      lines
-      |> Enum.at(4)
-      |> String.replace_prefix("If true: throw to monkey ", "")
-      |> String.to_integer()
+      ["Test:", "divisible", "by", divisor], monkey ->
+        Map.put(monkey, :divisor, String.to_integer(divisor))
 
-    to_false =
-      lines
-      |> Enum.at(5)
-      |> String.replace_prefix("If false: throw to monkey ", "")
-      |> String.to_integer()
+      ["If", "true:", "throw", "to", "monkey", num], monkey ->
+        Map.put(monkey, :to_true, String.to_integer(num))
 
-    %Monkey{items: items, operation: opeartion, divisor: divisor, targets: {to_true, to_false}}
+      ["If", "false:", "throw", "to", "monkey", num], monkey ->
+        Map.put(monkey, :to_false, String.to_integer(num))
+    end)
   end
 
   def throw(monkeys, i, mod) do
@@ -44,15 +36,11 @@ defmodule Monkey do
 
     new_item =
       monkey.operation
-      |> Code.eval_string([old: item])
+      |> Code.eval_string(old: item)
       |> elem(0)
       |> rem(mod)
 
-    target_idx =
-      monkey.targets
-      |> elem(
-        if rem(new_item, monkey.divisor) == 0, do: 0, else: 1
-      )
+    target_idx = if rem(new_item, monkey.divisor) == 0, do: monkey.to_true, else: monkey.to_false
 
     monkeys
     |> List.replace_at(i, %Monkey{monkey | items: rest})
@@ -71,12 +59,12 @@ monkeys =
 
 module =
   monkeys
-  |> Enum.reduce(1, fn m, acc ->  acc * m.divisor end)
+  |> Enum.reduce(1, fn m, acc -> acc * m.divisor end)
 
 1..10000
 |> Enum.reduce({monkeys, %{}}, fn round, {monkeys, throws} ->
   {monkeys, throws} =
-    0..Enum.count(monkeys) - 1
+    0..(Enum.count(monkeys) - 1)
     |> Enum.reduce({monkeys, throws}, fn i, {monkeys, throws} ->
       num_throws =
         monkeys
@@ -84,12 +72,16 @@ module =
         |> Map.get(:items)
         |> Enum.count()
 
-      monkeys = case num_throws do
-        0 -> monkeys
-        n -> for _ <- 1..n, reduce: monkeys do
-          monkeys -> Monkey.throw(monkeys, i, module)
+      monkeys =
+        case num_throws do
+          0 ->
+            monkeys
+
+          n ->
+            for _ <- 1..n, reduce: monkeys do
+              monkeys -> Monkey.throw(monkeys, i, module)
+            end
         end
-      end
 
       {
         monkeys,
@@ -103,7 +95,7 @@ module =
   {monkeys, throws}
 end)
 |> elem(1)
-|> Enum.sort(fn {_name1, size1}, {_name2, size2} -> size1 <= size2 end)
+|> Enum.sort(fn {_k1, n1}, {_k2, n2} -> n1 <= n2 end)
 |> Enum.take(-2)
 |> Enum.reduce(1, fn {_k, v}, acc -> acc * v end)
 |> IO.inspect(label: "\nAnswer:")

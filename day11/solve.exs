@@ -44,15 +44,13 @@ defmodule Monkey do
 
     new_item =
       monkey.operation
-      |> Code.eval_string([old: item])
+      |> Code.eval_string(old: item)
       |> elem(0)
       |> div(3)
 
     target_idx =
       monkey.targets
-      |> elem(
-        if rem(new_item, monkey.divisor) == 0, do: 0, else: 1
-      )
+      |> elem(if rem(new_item, monkey.divisor) == 0, do: 0, else: 1)
 
     monkeys
     |> List.replace_at(i, %Monkey{monkey | items: rest})
@@ -69,12 +67,11 @@ monkeys =
   |> Enum.map(fn chunk -> Monkey.new(chunk) end)
   |> IO.inspect()
 
-
 1..20
 |> Enum.reduce({monkeys, %{}}, fn round, {monkeys, throws} ->
   IO.inspect(round, label: "ROUND")
 
-  0..Enum.count(monkeys) - 1
+  0..(Enum.count(monkeys) - 1)
   |> Enum.reduce({monkeys, throws}, fn i, {monkeys, throws} ->
     num_throws =
       monkeys
@@ -82,10 +79,16 @@ monkeys =
       |> Map.get(:items)
       |> Enum.count()
 
-    monkeys = case num_throws do
-      0 -> monkeys
-      n -> for _ <- 1..n, reduce: monkeys do monkeys -> Monkey.throw(monkeys, i) end
-    end
+    monkeys =
+      case num_throws do
+        0 ->
+          monkeys
+
+        n ->
+          for _ <- 1..n, reduce: monkeys do
+            monkeys -> Monkey.throw(monkeys, i)
+          end
+      end
 
     {
       monkeys,
