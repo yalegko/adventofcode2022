@@ -5,27 +5,27 @@ defmodule Monkey do
 
   def new(lines) do
     lines
-    |> Enum.map(&String.split/1)
     |> Enum.reduce(struct!(Monkey), fn
-      ["Monkey", _num], monkey ->
+      "Monkey" <> _num, monkey ->
         monkey
 
-      ["Starting", "items:" | items], monkey ->
+      "Starting items: " <> items , monkey ->
         items
-        |> Enum.map(fn s -> String.replace(s, ",", "") end)
+        |> String.replace(",", "")
+        |> String.split()
         |> Enum.map(&String.to_integer/1)
         |> (fn items -> Map.put(monkey, :items, items) end).()
 
-      ["Operation:", "new", "=" | operands], monkey ->
-        Map.put(monkey, :operation, Enum.join(operands, " "))
+      "Operation: new = " <> op, monkey ->
+        Map.put(monkey, :operation, op)
 
-      ["Test:", "divisible", "by", divisor], monkey ->
+      "Test: divisible by " <> divisor, monkey ->
         Map.put(monkey, :divisor, String.to_integer(divisor))
 
-      ["If", "true:", "throw", "to", "monkey", num], monkey ->
+      "If true: throw to monkey " <> num, monkey ->
         Map.put(monkey, :to_true, String.to_integer(num))
 
-      ["If", "false:", "throw", "to", "monkey", num], monkey ->
+      "If false: throw to monkey " <> num, monkey ->
         Map.put(monkey, :to_false, String.to_integer(num))
     end)
   end
