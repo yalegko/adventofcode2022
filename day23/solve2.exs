@@ -4,7 +4,9 @@ defmodule Field do
   def do_step(field, round) do
     propose(field, round)
     |> Enum.reduce(field, fn
-      {pos, [a, b | rest]}, field -> field
+      # Two or more elves took the single spot -- don't move any of them.
+      {_pos, [_a, _b | _rest]}, field -> field
+      # Just one elf chose wisely.
       {new_pos, [old_pos]}, field -> field |> MapSet.delete(old_pos) |> MapSet.put(new_pos)
     end)
   end
@@ -23,10 +25,10 @@ defmodule Field do
   end
 
   # Returns `nil` or the movement ({new_x, new_y}) proposed by the elf.
-  defp propose_elf(field, {x, y} = elf, pattern) do
+  defp propose_elf(field, elf, pattern) do
     taken_adjacent =
       pattern
-      |> Enum.flat_map(&(adjacent_to(elf, &1)))
+      |> Enum.flat_map(&adjacent_to(elf, &1))
       |> MapSet.new()
       |> MapSet.intersection(field)
       |> MapSet.size()
@@ -36,7 +38,7 @@ defmodule Field do
         nil
       else
         pattern
-        |> Enum.map(&(adjacent_to(elf, &1)))
+        |> Enum.map(&adjacent_to(elf, &1))
         |> Enum.find(&(&1 |> Enum.all?(fn point -> not MapSet.member?(field, point) end)))
       end
 
@@ -49,23 +51,19 @@ defmodule Field do
   defp adjacent_to({x, y}, :W), do: [{x - 1, y - 1}, {x - 1, y}, {x - 1, y + 1}]
   defp adjacent_to({x, y}, :E), do: [{x + 1, y - 1}, {x + 1, y}, {x + 1, y + 1}]
 
-  defp pattern(round) do
-    case rem(round, 4) do
-      0 -> [:N, :S, :W, :E]
-      1 -> [:S, :W, :E, :N]
-      2 -> [:W, :E, :N, :S]
-      3 -> [:E, :N, :S, :W]
-    end
-  end
+  defp pattern(0), do: [:N, :S, :W, :E]
+  defp pattern(round) when round > 3, do: pattern(rem(round, 4))
+
+  defp pattern(round),
+    do: 0..(round - 1) |> Enum.reduce(pattern(0), fn _, [m | rest] -> rest ++ [m] end)
 
   def visualize(field) do
     {{minx, miny}, {maxx, maxy}} = field |> corners()
 
-
     IO.inspect({{minx, miny}, {maxx, maxy}}, label: "Size of Field")
 
-    for y <- miny-1..maxy+1 do
-      for(x <- minx-1..maxx+1, do: (if MapSet.member?(field, {x, y}), do: "#", else: "."))
+    for y <- (miny - 1)..(maxy + 1) do
+      for(x <- (minx - 1)..(maxx + 1), do: if(MapSet.member?(field, {x, y}), do: "#", else: "."))
       |> Enum.join()
       |> IO.puts()
     end
@@ -79,7 +77,7 @@ defmodule Field do
   def corners(field) do
     field
     |> Enum.reduce(
-      {{100500, 100500}, {-1, -1}},
+      {{100_500, 100_500}, {-1, -1}},
       fn {x, y}, {{minx, miny}, {maxx, maxy}} ->
         {
           {min(minx, x), min(miny, y)},
@@ -89,7 +87,6 @@ defmodule Field do
     )
   end
 end
-
 
 [fname] = System.argv()
 
@@ -108,8 +105,8 @@ field =
   |> Stream.scan(MapSet.new(), fn {x, y}, acc -> MapSet.put(acc, {x, y}) end)
   |> Stream.take(-1)
   |> Enum.at(0)
-  |> Field.visualize()
 
+# |> Field.visualize()
 
 0..9999
 |> Stream.transform(field, fn i, field ->
@@ -117,7 +114,7 @@ field =
 
   if MapSet.equal?(stepped, field),
     do: {:halt, field},
-    else: {[i+2], stepped}
+    else: {[i + 2], stepped}
 end)
 |> Stream.take(-1)
 |> Enum.at(0)

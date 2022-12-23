@@ -10,9 +10,9 @@ defmodule Field do
   end
 
   def propose(field, round) do
-    pattern = pattern(round)
-    |> IO.inspect(label: "Pattern")
-
+    pattern =
+      pattern(round)
+      |> IO.inspect(label: "Pattern")
 
     field
     |> Enum.reduce(%{}, fn elf, acc ->
@@ -26,8 +26,14 @@ defmodule Field do
   def propose_elf(field, {x, y}, pattern) do
     adjacent =
       [
-        {x + 1, y}, {x, y + 1}, {x + 1, y + 1}, {x + 1, y - 1},
-        {x - 1, y}, {x, y - 1}, {x - 1, y - 1}, {x - 1, y + 1},
+        {x + 1, y},
+        {x, y + 1},
+        {x + 1, y + 1},
+        {x + 1, y - 1},
+        {x - 1, y},
+        {x, y - 1},
+        {x - 1, y - 1},
+        {x - 1, y + 1}
       ]
       |> Enum.reject(fn point -> MapSet.member?(field, point) end)
 
@@ -45,6 +51,7 @@ defmodule Field do
         end)
         # |> IO.inspect(label: "pattern")
         |> Enum.find(&(&1 |> Enum.all?(fn point -> not MapSet.member?(field, point) end)))
+
         # |> IO.inspect(label: "Propose {#{x},#{y}}")
       end
 
@@ -63,11 +70,10 @@ defmodule Field do
   def visualize(field) do
     {{minx, miny}, {maxx, maxy}} = field |> corners()
 
-
     IO.inspect({{minx, miny}, {maxx, maxy}}, label: "Frontier")
 
-    for y <- miny-1..maxy+1 do
-      for(x <- minx-1..maxx+1, do: (if MapSet.member?(field, {x, y}), do: "#", else: "."))
+    for y <- (miny - 1)..(maxy + 1) do
+      for(x <- (minx - 1)..(maxx + 1), do: if(MapSet.member?(field, {x, y}), do: "#", else: "."))
       |> Enum.join()
       |> IO.puts()
     end
@@ -80,7 +86,7 @@ defmodule Field do
   def corners(field) do
     field
     |> Enum.reduce(
-      {{100500, 100500}, {-1, -1}},
+      {{100_500, 100_500}, {-1, -1}},
       fn {x, y}, {{minx, miny}, {maxx, maxy}} ->
         {
           {min(minx, x), min(miny, y)},
@@ -90,7 +96,6 @@ defmodule Field do
     )
   end
 end
-
 
 [fname] = System.argv()
 
@@ -111,13 +116,13 @@ field =
   |> Enum.at(0)
   |> Field.visualize()
 
-
 moved =
   for i <- 0..9, reduce: field do
     field ->
       # IO.puts("Round #{i}")
       field
       |> Field.do_step(i)
+
       # |> Field.visualize()
   end
 
@@ -129,5 +134,5 @@ moved =
 MapSet.size(field)
 |> IO.inspect()
 
-(maxx - minx + 1)*(maxy - miny + 1) - MapSet.size(moved)
+((maxx - minx + 1) * (maxy - miny + 1) - MapSet.size(moved))
 |> IO.inspect(label: "Free space")
